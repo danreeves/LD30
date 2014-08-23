@@ -7,18 +7,28 @@ var mainState = {
         game.load.spritesheet('player', 'img/player.gif', 50, 50, 9);
     },
     create: function() {
-        game.physics.startSystem(Phaser.Physics.ARCADE);
+        // Definitions
         this.p1 = this.game.add.sprite(100, 245, 'player');
-        game.physics.arcade.enable(this.p1);
-        this.p1.body.gravity.y = 1000;
         this.cursor = this.game.input.keyboard.createCursorKeys();
         this.spaceKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
-        this.cursor.up.onDown.add(this.jump, this);
-        this.p1.body.collideWorldBounds = true;
-        game.camera.follow(this.p1, Phaser.Camera.FOLLOW_PLATFORMER);
-        this.p1.anchor.setTo(0.5, 0.5);
-        this.p1.animations.add('walk',[1,2,3,4,5,6,7,8,9]);
 
+        // World
+        game.physics.startSystem(Phaser.Physics.ARCADE);
+        game.physics.arcade.enable(this.p1);
+        game.camera.follow(this.p1, Phaser.Camera.FOLLOW_PLATFORMER);
+
+        // Player
+        this.p1.body.gravity.y = 1000;
+        this.p1.body.maxVelocity.setTo(200,9999);
+        this.p1.body.drag.setTo(1000,-100);
+        this.p1.body.collideWorldBounds = true;
+        this.p1.anchor.setTo(0.5, 0.5);
+
+        // Controls
+        this.cursor.up.onDown.add(this.jump, this);
+
+        // Animations
+        this.p1.animations.add('walk',[1,2,3,4,5,6,7,8,9]);
     },
     update: function() {
         this.move();
@@ -30,12 +40,14 @@ var mainState = {
 
             this.p1.scale.x = 1;
             this.p1.play('walk', 14, true);
+            this.p1.body.acceleration.x = 500;
 
         }
         else if (this.cursor.left.isDown) {
 
             this.p1.scale.x = -1;
             this.p1.play('walk', 14, true);
+            this.p1.body.acceleration.x = -500;
         }
         else {
              this.p1.body.acceleration.x = 0;
