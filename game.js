@@ -77,7 +77,7 @@ var mainState = {
             acceleration = 0;
             animation = 'crouch';
             stillFrame = 10;
-            height = 38;
+            height = 32;
             yoffset = 6;
         }
 
