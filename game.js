@@ -48,9 +48,6 @@ var mainState = {
         this.move();
         this.game.debug.body(this.p1);
     },
-    render: function () {
-
-    },
 
     // In Game Functions
     move: function () {
@@ -78,7 +75,8 @@ var mainState = {
             animation = 'crouch';
             stillFrame = 10;
             height = 32;
-            yoffset = 6;
+            yoffset = 0;
+            if (onTheGround) drag = 100;
         }
 
         this.p1.body.drag.setTo(drag, 0);
