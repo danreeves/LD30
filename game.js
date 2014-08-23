@@ -3,25 +3,30 @@ var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.CANVAS)
 var mainState = {
 
     preload: function() {
-        game.time.advancedTiming = true;
-        game.stage.backgroundColor = 0x4488cc;
+        game.load.image('bgcity', 'img/bg/city.gif');
         game.load.spritesheet('player', 'img/player.gif', 50, 50, 11);
+        game.load.spritesheet('demon', 'img/demon.gif', 50, 50, 4);
         game.load.spritesheet('bullet', 'img/bullet.gif', 9, 6, 2);
         game.load.tilemap('map', 'maps/1.json', null, Phaser.Tilemap.TILED_JSON);
         game.load.image('level', 'img/tilemap.png');
+        game.time.advancedTiming = true;
+        // game.stage.backgroundColor = 0xff00ff;
     },
     create: function () {
         // World
         game.physics.startSystem(Phaser.Physics.ARCADE);
+        bg = game.add.tileSprite(0, 0, game.width, game.height, 'bgcity');
+        bg.fixedToCamera = true;
         this.map = game.add.tilemap('map');
         this.map.addTilesetImage('level');
         this.layer = this.map.createLayer('Tile Layer 1');
-        this.map.setCollisionBetween(0, 100);
+        this.map.setCollisionBetween(0, 1000);
         this.layer.resizeWorld();
+
         // layer.debug = true;
 
         // Player
-        this.p1 = this.game.add.sprite(64/2, this.game.world.height-64, 'player');
+        this.p1 = this.game.add.sprite(64/2, this.game.world.height-193, 'player');
         game.physics.arcade.enable(this.p1);
         game.camera.follow(this.p1, Phaser.Camera.FOLLOW_PLATFORMER);
         this.p1.body.setSize(25,50,0,0);
@@ -52,6 +57,7 @@ var mainState = {
         this.p1.animations.add('walk',[1,2,3,4,5,6,7,8]);
         this.p1.animations.add('jump',[9]);
         this.p1.animations.add('crouch',[10]);
+        // this.p1.animations.add('walk',[0,1,2,3]);
 
         // Globals
         this.maxJumps = 2;
@@ -148,7 +154,7 @@ var mainState = {
         bullet.frame = 1;
         setTimeout(function () {
             bullet.kill();
-        }, 50)
+        }, 50);
     },
 };
 
