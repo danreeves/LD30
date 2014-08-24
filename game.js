@@ -215,7 +215,7 @@ var mainState = {
     },
     demonAttack: function (demon, left) {
         demon.lastShot = game.time.now;
-        var vel = 1;
+        var vel = 250;
         var fireball = this.fireballs.getFirstExists(false);
         if (!left) {
             fireball.scale.x = 1;
