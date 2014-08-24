@@ -91,6 +91,8 @@ var mainState = {
         this.fireballs.setAll('body.velocity.x', 100);
         this.fireballs.setAll('body.gravity.y', -1000);
         this.fireballs.setAll('hasCollided', false, false, false, 0, true);
+        this.fireballs.setAll('checkWorldBounds', true);
+        this.fireballs.setAll('outOfBoundsKill', true);
 
         // Controls
         this.cursor = this.game.input.keyboard.createCursorKeys();
