@@ -16,6 +16,8 @@ var mainState = {
     create: function () {
         // World
         game.physics.startSystem(Phaser.Physics.ARCADE);
+        game.physics.arcade.gravity.y = 1000;
+        game.stage.smoothed = false;
         bg = game.add.tileSprite(0, 0, game.width, game.height, 'bgcity');
         bg.fixedToCamera = true;
         this.map = game.add.tilemap('map');
@@ -26,7 +28,6 @@ var mainState = {
         this.map.setCollisionByExclusion([0], true, 'Collidable Layer', true);
         this.layer1.resizeWorld();
 
-        game.physics.arcade.gravity.y = 1000;
         // this.layer1.debug = true;
         this.Player = this.map.objects.Player[0];
         this.Demons = this.map.objects.Demons;
@@ -34,13 +35,20 @@ var mainState = {
 
         // Player
         this.p1 = this.game.add.sprite(this.map.objects.Player[0].x, this.map.objects.Player[0].y, 'player');
-        game.physics.arcade.enable(this.p1);
         game.camera.follow(this.p1, Phaser.Camera.FOLLOW_PLATFORMER);
+        game.physics.arcade.enable(this.p1);
         this.p1.body.setSize(25,50,0,0);
         this.p1.body.maxVelocity.setTo(200,9999);
         this.p1.body.drag.setTo(1000,-100);
+        this.p1.body.velocity.y = 10;
         this.p1.anchor.setTo(0.5, 0.5);
-        // this.p1.body.collideWorldBounds = true;
+        this.p1.outOfBoundsKill = true;
+        this.p1.checkWorldBounds = true;
+        this.p1.health = 10;
+        this.p1.body.collideWorldBounds = true;
+        this.p1.events.onKilled.add(function () {
+            console.log("GAME OVER");
+        }, this);
 
         // Demons
         this.demons = game.add.group();
@@ -49,13 +57,17 @@ var mainState = {
         this.demons.physicsBodyType = Phaser.Physics.ARCADE;
         game.physics.arcade.enable(this.demons);
         this.demons.setAll('anchor.x', 0.5, false, false, 0, true);
-        this.demons.setAll('alive', true, false, false, 0, true);
         this.demons.setAll('lastShot', game.time.now, false, false, 0, true);
-        this.demons.setAll('hp', 10, false, false, 0, true);
-        // this.demons.setAll('body.width', 25, false, false, 0, true);
-        // this.demons.setAll('body.height', 45, false, false, 0, true);
+        this.demons.setAll('health', 10);
         this.demons.forEach(function (demon) {
             demon.body.setSize(25,45, 0, 5);
+            demon.body.velocity.y = 10;
+            demon.events.onKilled.add(function () {
+                var dead = this.game.add.sprite(demon.x, demon.y, 'demon');
+                var die = dead.animations.add('die',[7, 8, 9, 10]);
+                die.killOnComplete = true;
+                dead.play('die', 3);
+            }, this);
         }, this, true);
 
         // Bullets
@@ -63,15 +75,11 @@ var mainState = {
         this.bullets.enableBody = true;
         this.bullets.physicsBodyType = Phaser.Physics.ARCADE;
         this.bullets.createMultiple(30, 'bullet', 0, false);
-        this.bullets.setAll('outOfBoundsKill', true);
-        this.bullets.setAll('checkWorldBounds', true);
-        this.bullets.setAll('autoCull', true);
         this.bullets.setAll('anchor.x', -1);
         this.bullets.setAll('anchor.y', 0.5);
         this.bullets.setAll('body.velocity.x', 100);
         this.bullets.setAll('body.gravity.y', -1000);
         this.bullets.setAll('hasCollided', false, false, false, 0, true);
-        this.bullets.setAll('spawnTime', game.time.now, false, false, 0, true);
 
         // Fireballs
         this.fireballs = game.add.group();
@@ -82,6 +90,7 @@ var mainState = {
         this.fireballs.setAll('anchor.y', 0.5);
         this.fireballs.setAll('body.velocity.x', 100);
         this.fireballs.setAll('body.gravity.y', -1000);
+        this.fireballs.setAll('hasCollided', false, false, false, 0, true);
 
         // Controls
         this.cursor = this.game.input.keyboard.createCursorKeys();
@@ -120,9 +129,7 @@ var mainState = {
         this.physics.arcade.overlap(this.fireballs, this.layer1, this.fireballHitLayer, null, this);
         this.physics.arcade.overlap(this.fireballs, this.p1, this.fireballHitPlayer, null, this);
 
-
         this.move();
-        this.removeBullets();
         this.demons.forEach(this.moveDemons, this, true);
     },
     render: function () {
@@ -235,6 +242,7 @@ var mainState = {
         demon.lastShot = game.time.now;
         var vel = 250;
         var fireball = this.fireballs.getFirstExists(false);
+        fireball.hasCollided = false;
         if (!left) {
             fireball.scale.x = 1;
         } else if (left) {
@@ -254,7 +262,7 @@ var mainState = {
     shoot: function () {
         var vel = 500;
         var bullet = this.bullets.getFirstExists(false);
-        bullet.spawnTime = game.time.now;
+        bullet.lifespan = 1000;
         bullet.hasCollided = false;
         if (this.facingRight) {
             bullet.anchor.x = -1;
@@ -268,12 +276,9 @@ var mainState = {
         bullet.body.velocity.x = this.p1.body.velocity.x + vel;
         bullet.frame = 0;
     },
-    removeBullets: function () {
-        this.bullets.forEach(function (bullet) {
-            if (game.time.now - bullet.spawnTime > 1000) bullet.kill();
-        }, this, true);
-    },
     bulletHitLayer: function (bullet, layer) {
+        if (bullet.hasCollided) return;
+        bullet.hasCollided = true;
         bullet.frame = 1;
         bullet.body.velocity.x = 0;
         setTimeout(function () {
@@ -283,16 +288,7 @@ var mainState = {
     bulletHitDemon: function (bullet, demon) {
         if (bullet.hasCollided) return;
         bullet.hasCollided = true;
-        demon.hp--;
-        if (demon.hp === 0) {
-            demon.alive = false;
-            demon.body.destroy();
-            demon.body = null;
-            demon.play('demon.die');
-            setTimeout(function () {
-                demon.kill();
-            }, 1000);
-        }
+        demon.damage(1);
         bullet.frame = 1;
         bullet.body.velocity.x = 0;
         setTimeout(function () {
@@ -300,6 +296,8 @@ var mainState = {
         }, 50);
     },
     fireballHitLayer: function (fireball, layer) {
+        if (fireball.hasCollided) return;
+        fireball.hasCollided = true;
         fireball.play('fireball.hit');
         fireball.body.velocity.x = 0;
         setTimeout(function () {
@@ -307,11 +305,15 @@ var mainState = {
         }, 200);
     },
     fireballHitPlayer: function (player, fireball) {
+        if (fireball.hasCollided) return;
+        fireball.hasCollided = true;
         fireball.play('fireball.hit');
         fireball.body.velocity.x = 0;
         setTimeout(function () {
             fireball.kill();
         }, 200);
+        player.damage(1);
+        console.log(player.health);
     },
 };
 
