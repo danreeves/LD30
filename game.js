@@ -5,8 +5,9 @@ var mainState = {
     preload: function() {
         game.load.image('bgcity', 'img/bg/city.gif');
         game.load.spritesheet('player', 'img/player.gif', 50, 50, 11);
-        game.load.spritesheet('demon', 'img/demon.gif', 50, 50, 4);
+        game.load.spritesheet('demon', 'img/demon.gif', 50, 50, 11);
         game.load.spritesheet('bullet', 'img/bullet.gif', 9, 6, 2);
+        game.load.spritesheet('fireball', 'img/fireball.gif', 25, 25, 7);
         game.load.tilemap('map', 'maps/1.json', null, Phaser.Tilemap.TILED_JSON);
         game.load.image('level', 'img/tilemap.png');
         game.time.advancedTiming = true;
@@ -44,13 +45,15 @@ var mainState = {
         this.map.createFromObjects('Demons', 1, 'demon', 0, true, false, this.demons);
         this.demons.enableBody = true;
         this.demons.physicsBodyType = Phaser.Physics.ARCADE;
-        this.demons.setAll('outOfBoundsKill', true);
-        this.demons.setAll('checkWorldBounds', true);
-        this.demons.callAll('animations.add', 'animations', 'demonwalk', [0, 1, 2, 3], 3, true);
+        this.demons.callAll('animations.add', 'animations', 'demon.walk', [0, 1, 2, 3], 3, true);
+        this.demons.callAll('animations.add', 'animations', 'demon.attack', [6, 5, 4], 3, true);
+        this.demons.callAll('animations.add', 'animations', 'demon.die', [7, 8, 9, 10], 3, true);
         game.physics.arcade.enable(this.demons);
         this.demons.forEach(function (demon) {
             demon.body.setSize(25,50, 0, 0);
             demon.anchor.x = 0.5;
+            demon.alive = true;
+            demon.lastShot = game.time.now;
         }, this, true);
 
         // Bullets
@@ -60,10 +63,20 @@ var mainState = {
         this.bullets.createMultiple(30, 'bullet', 0, false);
         this.bullets.setAll('anchor.x', -1);
         this.bullets.setAll('anchor.y', 0.5);
-        this.bullets.setAll('outOfBoundsKill', true);
-        this.bullets.setAll('checkWorldBounds', true);
         this.bullets.setAll('body.velocity.x', 100);
         this.bullets.setAll('body.gravity.y', -1000);
+
+        // Fireballs
+        this.fireballs = game.add.group();
+        this.fireballs.enableBody = true;
+        this.fireballs.physicsBodyType = Phaser.Physics.ARCADE;
+        this.fireballs.createMultiple(30, 'fireball', 0, false);
+        this.fireballs.setAll('anchor.x', 0.5);
+        this.fireballs.setAll('anchor.y', 0.5);
+        this.fireballs.setAll('body.velocity.x', 100);
+        this.fireballs.setAll('body.gravity.y', -1000);
+        this.fireballs.callAll('animations.add', 'animations', 'fireball.fly', [0, 1, 2, 3], 4, true);
+        this.fireballs.callAll('animations.add', 'animations', 'fireball.hit', [5, 6, 7], 12, true);
 
         // Controls
         this.cursor = this.game.input.keyboard.createCursorKeys();
@@ -87,6 +100,8 @@ var mainState = {
         game.physics.arcade.collide(this.demons, this.layer);
         game.physics.arcade.overlap(this.bullets, this.layer, this.bulletHitLayer, null, this);
         game.physics.arcade.overlap(this.bullets, this.demons, this.bulletHitDemon, null, this);
+        game.physics.arcade.overlap(this.fireballs, this.layer, this.fireballHitLayer, null, this);
+        game.physics.arcade.overlap(this.fireballs, this.p1, this.fireballHitPlayer, null, this);
 
 
         this.move();
@@ -94,7 +109,7 @@ var mainState = {
     },
     render: function () {
         // this.game.debug.body(this.p1);
-        // this.demons.forEach(function (demon) {
+        // this.fireballs.forEach(function (demon) {
         //     this.game.debug.body(demon);
         // }, this, true);
         // game.debug.text(game.time.fps +' fps' || '--', 2, 14, "#00ff00");
@@ -153,27 +168,64 @@ var mainState = {
          }
     },
     moveDemons: function (demon) {
-        var stopDistance = 30;
-        var viewDistance = 500;
+        if (demon.alive === false) return;
+        var stopDistance = 500;
+        var viewDistance = game.width/2 + 100;
+        // var viewDistance = 500;
+        var shootingRange = false;
+        var left;
+
         if (this.p1.position.x < demon.position.x) {
             // Player is left of demon
+            left = true;
+            shootingRange = ((demon.position.x - this.p1.position.x) < stopDistance);
             if ((demon.position.x - this.p1.position.x) < viewDistance) {
-                if ((demon.position.x - this.p1.position.x) > stopDistance) demon.body.velocity.x = -20;
-                else demon.body.velocity.x = 0;
+                if (!shootingRange) {
+                    demon.body.velocity.x = -20;
+                }
+                else {
+                    demon.body.velocity.x = 0;
+                }
                 demon.scale.x = 1;
             } else demon.body.velocity.x = 0;
 
         } else {
             // Player is right of demon
+            left = false;
+            shootingRange = ((this.p1.position.x - demon.position.x) < stopDistance);
             if ((this.p1.position.x - demon.position.x) < viewDistance) {
-                if ((this.p1.position.x - demon.position.x) > stopDistance) demon.body.velocity.x = 20;
-                else demon.body.velocity.x = 0;
+                if (!shootingRange) {
+                    demon.body.velocity.x = 20;
+                }
+                else {
+                    demon.body.velocity.x = 0;
+                }
                 demon.scale.x = -1;
             } else demon.body.velocity.x = 0;
 
         }
-        if (demon.body.velocity.x !== 0) demon.play('demonwalk');
+        if (demon.body.velocity.x !== 0) demon.play('demon.walk');
+        else if (shootingRange) {
+            if (game.time.now - demon.lastShot > 1000) {
+                this.demonAttack(demon, left);
+                demon.play('demon.attack');
+            }
+        }
         else demon.frame = 0;
+    },
+    demonAttack: function (demon, left) {
+        demon.lastShot = game.time.now;
+        var vel = 1;
+        var fireball = this.fireballs.getFirstExists(false);
+        if (!left) {
+            fireball.scale.x = 1;
+        } else if (left) {
+            fireball.scale.x = -1;
+            vel = -250;
+        }
+        fireball.reset(demon.x, demon.y+demon.body.height/4*3);
+        fireball.body.velocity.x = vel;
+        fireball.play('fireball.fly');
     },
     jump: function () {
         if (this.jumps < this.maxJumps) {
@@ -204,12 +256,32 @@ var mainState = {
         }, 50);
     },
     bulletHitDemon: function (bullet, demon) {
+        demon.alive = false;
+        demon.body.destroy();
+        demon.body = null;
         bullet.frame = 1;
         bullet.body.velocity.x = 0;
         setTimeout(function () {
             bullet.kill();
         }, 50);
-        demon.body.velocity.x = 10;
+        demon.play('demon.die');
+        setTimeout(function () {
+            demon.kill();
+        }, 1000);
+    },
+    fireballHitLayer: function (fireball, layer) {
+        fireball.play('fireball.hit');
+        fireball.body.velocity.x = 0;
+        setTimeout(function () {
+            fireball.kill();
+        }, 200);
+    },
+    fireballHitPlayer: function (fireball, player) {
+        fireball.frame = 5;
+        fireball.body.velocity.x = 0;
+        setTimeout(function () {
+            fireball.kill();
+        }, 50);
     },
 };
 
