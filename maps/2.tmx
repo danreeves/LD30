@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" width="25" height="100" tilewidth="32" tileheight="32">
+ <tileset firstgid="1" name="level" tilewidth="32" tileheight="32" spacing="4" margin="2">
+  <image source="../img/tilemap.png" trans="ff00ff" width="432" height="396"/>
+ </tileset>
+ <layer name="Non-collidable Layer 1" width="25" height="100">
+  <data encoding="base64" compression="zlib">
+   eJztw0EKAAAEADBP5v8XPqGkrRYBAAAAAAAAAADAVTlr+RcNA2ULCQ==
+  </data>
+ </layer>
+ <layer name="Non-collidable Layer 2" width="25" height="100">
+  <data encoding="base64" compression="zlib">
+   eJztzCEBAAAIA7BnIxL9BZYCKLYASwAAAAAAAAAAAPiqj/86/rcBncAAtQ==
+  </data>
+ </layer>
+ <layer name="Collidable Layer" width="25" height="100">
+  <data encoding="base64" compression="zlib">
+   eJzt00EKgDAMBMB+Sv/lXX27AW9VEA+NVWdgzy2bpBQAAAAAAACAo6kK9zzZn7ldq+ejq91ZLz13k/3Hr73TSvb+9L6nvXnbnWf6eydzZGmYNTJExsbZAHvqJHY=
+  </data>
+ </layer>
+ <objectgroup name="Player" width="25" height="100">
+  <object gid="105" x="88" y="3084"/>
+ </objectgroup>
+ <objectgroup name="Demons" width="25" height="100"/>
+ <layer name="Non-collidable Layer 3" width="25" height="100">
+  <data encoding="base64" compression="zlib">
+   eJztwQENAAAAwqD3T20ON6AAAAAAAAAAAADg3wAnEAAB
+  </data>
+ </layer>
+ <objectgroup name="Exits" width="25" height="100"/>
+</map>

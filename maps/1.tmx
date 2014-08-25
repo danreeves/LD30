@@ -18,6 +18,9 @@
    eJzt1bENwCAMRUEvBdkJMQLJ7HGqjGCE7qTX/8qOAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHbXsp5d1UOg2Mhm9YhDrOzWFj3x33nV9/3aF4DMR2U=
   </data>
  </layer>
+ <objectgroup name="Exits" width="100" height="100">
+  <object gid="119" x="3028" y="3157"/>
+ </objectgroup>
  <objectgroup name="Player" width="100" height="100">
   <object gid="105" x="88" y="3084"/>
  </objectgroup>
@@ -32,7 +35,4 @@
    eJzt0bEJAAAIBLHfzf13srYVwSaZ4OASAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADbqO4DBD+BKA0b9AIc=
   </data>
  </layer>
- <objectgroup name="Exits" width="100" height="100">
-  <object gid="119" x="3113" y="3119"/>
- </objectgroup>
 </map>

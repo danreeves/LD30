@@ -1,27 +1,13 @@
-var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.CANVAS);
 
-var mainState = {
-
-    preload: function() {
-        game.load.image('bgcity', 'img/bg/city.gif');
-        game.load.spritesheet('player', 'img/player.gif', 50, 50, 11);
-        game.load.spritesheet('demon', 'img/demon.gif', 50, 50, 11);
-        game.load.spritesheet('bullet', 'img/bullet.gif', 9, 6, 2);
-        game.load.spritesheet('fireball', 'img/fireball.gif', 25, 25, 7);
-        game.load.spritesheet('portal', 'img/portal.gif', 90, 49, 5);
-        game.load.tilemap('map', 'maps/1.json', null, Phaser.Tilemap.TILED_JSON);
-        game.load.image('level', 'img/tilemap.png');
-        game.time.advancedTiming = true;
-        // game.stage.backgroundColor = 0xff00ff;
-    },
+var main = {
     create: function () {
         // World
-        game.physics.startSystem(Phaser.Physics.ARCADE);
-        game.physics.arcade.gravity.y = 1000;
-        game.stage.smoothed = false;
-        bg = game.add.tileSprite(0, 0, game.width, game.height, 'bgcity');
+        this.game.physics.startSystem(Phaser.Physics.ARCADE);
+        this.game.physics.arcade.gravity.y = 1000;
+        this.game.stage.smoothed = false;
+        bg = this.game.add.tileSprite(0, 0, this.game.width, this.game.height, 'bgcity');
         bg.fixedToCamera = true;
-        this.map = game.add.tilemap('map');
+        this.map = this.game.add.tilemap(this.game.currentLevel);
         this.map.addTilesetImage('level');
         this.layer3 = this.map.createLayer('Non-collidable Layer 1');
         this.layer2 = this.map.createLayer('Non-collidable Layer 2');
@@ -36,17 +22,17 @@ var mainState = {
 
 
         // Portals
-        this.portals = game.add.group();
+        this.portals = this.game.add.group();
         this.map.createFromObjects('Exits', 119, 'portal', 0, true, false, this.portals);
         this.portals.enableBody = true;
         this.portals.physicsBodyType = Phaser.Physics.ARCADE;
-        game.physics.arcade.enable(this.portals);
+        this.game.physics.arcade.enable(this.portals);
         this.portals.setAll('body.gravity.y', -1000);
 
         // Player
         this.p1 = this.game.add.sprite(this.map.objects.Player[0].x, this.map.objects.Player[0].y, 'player');
-        game.camera.follow(this.p1, Phaser.Camera.FOLLOW_PLATFORMER);
-        game.physics.arcade.enable(this.p1);
+        this.game.camera.follow(this.p1, Phaser.Camera.FOLLOW_PLATFORMER);
+        this.game.physics.arcade.enable(this.p1);
         this.p1.body.setSize(25,50,0,0);
         this.p1.body.maxVelocity.setTo(200,9999);
         this.p1.body.drag.setTo(1000,-100);
@@ -54,20 +40,28 @@ var mainState = {
         this.p1.anchor.setTo(0.5, 0.5);
         this.p1.outOfBoundsKill = true;
         this.p1.checkWorldBounds = true;
-        this.p1.health = 10;
+        this.p1.health = 1;
         this.p1.body.collideWorldBounds = true;
-        this.p1.events.onKilled.add(function () {
-            console.log("GAME OVER");
+        this.p1.events.onKilled.add(function (p1) {
+            var dead = this.game.add.sprite(p1.x + 25, p1.y - 25, 'fireball');
+            dead.animations.add('fire',[0, 1, 2, 3], 0, true);
+            dead.angle = 90;
+            dead.scale.x = dead.scale.y = 2;
+            var anim = dead.play('fire', 8);
+            var game = this.game;
+            setTimeout(function () {
+                game.state.start('menu');
+            }, 2000);
         }, this);
 
         // Demons
-        this.demons = game.add.group();
+        this.demons = this.game.add.group();
         this.map.createFromObjects('Demons', 1, 'demon', 0, true, false, this.demons);
         this.demons.enableBody = true;
         this.demons.physicsBodyType = Phaser.Physics.ARCADE;
-        game.physics.arcade.enable(this.demons);
+        this.game.physics.arcade.enable(this.demons);
         this.demons.setAll('anchor.x', 0.5, false, false, 0, true);
-        this.demons.setAll('lastShot', game.time.now, false, false, 0, true);
+        this.demons.setAll('lastShot', this.game.time.now, false, false, 0, true);
         this.demons.setAll('health', 10);
         this.demons.forEach(function (demon) {
             demon.body.setSize(25,45, 0, 5);
@@ -81,7 +75,7 @@ var mainState = {
         }, this, true);
 
         // Bullets
-        this.bullets = game.add.group();
+        this.bullets = this.game.add.group();
         this.bullets.enableBody = true;
         this.bullets.physicsBodyType = Phaser.Physics.ARCADE;
         this.bullets.createMultiple(30, 'bullet', 0, false);
@@ -92,7 +86,7 @@ var mainState = {
         this.bullets.setAll('hasCollided', false, false, false, 0, true);
 
         // Fireballs
-        this.fireballs = game.add.group();
+        this.fireballs = this.game.add.group();
         this.fireballs.enableBody = true;
         this.fireballs.physicsBodyType = Phaser.Physics.ARCADE;
         this.fireballs.createMultiple(30, 'fireball', 0, false);
@@ -131,14 +125,16 @@ var mainState = {
         this.facingRight = true;
 
         // Front layer
-        this.map2 = game.add.tilemap('map');
+        this.map2 = this.game.add.tilemap(this.game.currentLevel);
         this.map2.addTilesetImage('level');
         this.layer4 = this.map2.createLayer('Non-collidable Layer 3');
+
     },
     update: function () {
         this.physics.arcade.collide(this.p1, this.layer1);
-        this.physics.arcade.overlap(this.p1, this.portals, this.exitLevel, null, this);
         this.physics.arcade.collide(this.demons, this.layer1);
+
+        this.physics.arcade.overlap(this.p1, this.portals, this.exitLevel, null, this);
         this.physics.arcade.overlap(this.bullets, this.layer1, this.bulletHitLayer, null, this);
         this.physics.arcade.overlap(this.bullets, this.demons, this.bulletHitDemon, null, this);
         this.physics.arcade.overlap(this.fireballs, this.layer1, this.fireballHitLayer, null, this);
@@ -157,11 +153,11 @@ var mainState = {
         // this.portals.forEach(function (demon) {
         //     this.game.debug.body(demon);
         // }, this, true);
-        // game.debug.text(game.time.fps +' fps' || '--', 2, 14, "#00ff00");
+        // this.game.debug.text(this.game.time.fps +' fps' || '--', 2, 14, "#00ff00");
 
     },
 
-    // In Game Functions
+    // In this.Game Functions
     move: function () {
         var animation = 'walk';
         var drag = 1000;
@@ -215,7 +211,7 @@ var mainState = {
     moveDemons: function (demon) {
         if (demon.alive === false) return;
         var stopDistance = 500;
-        var viewDistance = game.width/2 + 100;
+        var viewDistance = this.game.width/2 + 100;
         // var viewDistance = 500;
         var shootingRange = false;
         var left;
@@ -251,7 +247,7 @@ var mainState = {
         }
         if (demon.body.velocity.x !== 0) demon.play('demon.walk');
         else if (shootingRange) {
-            if (game.time.now - demon.lastShot > 2000) {
+            if (this.game.time.now - demon.lastShot > 2000) {
                 this.demonAttack(demon, left);
                 demon.play('demon.attack');
             }
@@ -259,7 +255,7 @@ var mainState = {
         else demon.frame = 0;
     },
     demonAttack: function (demon, left) {
-        demon.lastShot = game.time.now;
+        demon.lastShot = this.game.time.now;
         var vel = 250;
         var fireball = this.fireballs.getFirstExists(false);
         fireball.hasCollided = false;
@@ -337,10 +333,13 @@ var mainState = {
     },
     exitLevel: function () {
         if (this.demons.countLiving() < 1) {
-            console.log('YOU WIN');
+            var current = this.game.currentLevel.match(/\d+/)[0];
+            current++;
+            this.game.levels['level'+current] = true;
+            this.game.state.start('menu');
+            // console.log('YOU WIN');
         }
     },
+    cleanUp: function () {
+    },
 };
-
-game.state.add('main', mainState);
-game.state.start('main');
