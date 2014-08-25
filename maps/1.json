@@ -35,6 +35,31 @@
         }, 
         {
          "height":100,
+         "name":"Exits",
+         "objects":[
+                {
+                 "gid":119,
+                 "height":0,
+                 "name":"",
+                 "properties":
+                    {
+
+                    },
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":3028,
+                 "y":3157
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "width":100,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "height":100,
          "name":"Player",
          "objects":[
                 {
